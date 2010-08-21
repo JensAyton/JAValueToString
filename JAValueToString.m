@@ -24,6 +24,7 @@
 */
 
 #import <Foundation/Foundation.h>
+#import <objc/runtime.h>
 
 
 // If nonzero, each value is preceeded by a type name in parentheses.
@@ -74,7 +75,7 @@ enum
 #if __x86_64__
 	kAlignPointer			= 8,
 	kAlignBool				= 1,
-	kAlignChar				= 1,
+	kAlignChar				= 1,	// NOTE: @encode() assumes char is signed and doesn't differentiate it from signed char.
 	kAlignUnsignedChar		= 1,
 	kAlignShort				= 2,
 	kAlignUnsignedShort		= 2,
@@ -146,6 +147,50 @@ enum
 };
 
 
+enum
+{
+	kSignaturePointer			= _C_PTR,
+	kSignatureBool				= _C_BOOL,
+	kSignatureChar				= _C_CHR,
+	kSignatureUnsignedChar		= _C_UCHR,
+	kSignatureShort				= _C_SHT,
+	kSignatureUnsignedShort		= _C_USHT,
+	kSignatureInt				= _C_INT,
+	kSignatureUnsignedInt		= _C_UINT,
+	kSignatureLong				= _C_LNG,
+	kSignatureUnsignedLong		= _C_ULNG,
+	kSignatureLongLong			= _C_LNG_LNG,
+	kSignatureUnsignedLongLong	= _C_ULNG_LNG,
+	kSignatureFloat				= _C_FLT,
+	kSignatureDouble			= _C_DBL,
+	kSignatureSelector			= _C_SEL,
+	kSignatureCharPointer		= _C_CHARPTR,
+	kSignatureObject			= _C_ID,
+	kSignatureClass				= _C_CLASS,
+	kSignatureStruct			= _C_STRUCT_B,
+	kSignatureArray				= _C_ARY_B,
+	kSignatureUnion				= _C_UNION_B,
+	kSignatureVoid				= _C_VOID,
+	kSignatureUndef				= _C_UNDEF,
+	kSignatureAtom				= _C_ATOM,
+	kSignatureBitfield			= _C_BFLD,
+	
+	// Unused.
+//	kSignatureVector			= _C_VECTOR,
+//	kSignatureConst				= _C_CONST,
+};
+
+
+enum
+{
+	kTokenAnonymousAggregate	= '\?',
+	kTokenAggregateNameSeparator= '=',
+	kTokenEndOfStruct			= _C_STRUCT_E,
+	kTokenEndOfArray			= _C_ARY_E,
+	kTokenEndOfUnion			= _C_UNION_E,
+};
+
+
 #define DO_NOTHING					do {} while (0)
 
 
@@ -170,25 +215,22 @@ typedef struct
 {
 	Decoder		decoder;
 	unsigned	alignment;
-	const char	*signature;	// A char would be more efficient, but using a char * allows us to init with @encode().
 #if NAMES_IN_DISPATCH_TABLE
 	const char	*name;
 #endif
+	char		signature;
 } DispatchEntry;
 
 
 #if NAMES_IN_DISPATCH_TABLE
-#define DECLARE_DISPATCH(nm, sig) \
-	static DispatchEntry sDispatch##nm = { .decoder = Decode##nm, .alignment = kAlign##nm, .signature = sig, .name = #nm }
+#define DECLARE_DISPATCH(nm) \
+	static DispatchEntry sDispatch##nm = { .decoder = Decode##nm, .alignment = kAlign##nm, .signature = kSignature##nm, .name = #nm }
 #else
-#define DECLARE_DISPATCH(name, sig) \
-	static DispatchEntry sDispatch##name = { .decoder = Decode##name, .alignment = kAlign##name, .signature = sig }
+#define DECLARE_DISPATCH(nm) \
+	static DispatchEntry sDispatch##nm = { .decoder = Decode##nm, .alignment = kAlign##nm, .signature = kSignature##nm }
 #endif
 
-#define DECLARE_DISPATCH_T(name, TYPE) \
-DECLARE_DISPATCH(name, @encode(TYPE))
-
-#define DECODE_SCALAR_BASE(TYPE, name, formatString, EXTRA, signature) \
+#define DECODE_SCALAR(TYPE, name, formatString, EXTRA) \
 static void Decode##name(DECODER_PARAMS) \
 { \
 	NSCParameterAssert(bufOffset != NULL); \
@@ -206,9 +248,7 @@ static void Decode##name(DECODER_PARAMS) \
 	} \
 	*bufOffset += sizeof value; \
 } \
-DECLARE_DISPATCH(name, signature);
-
-#define DECODE_SCALAR(TYPE, name, formatString) DECODE_SCALAR_BASE(TYPE, name, formatString, DO_NOTHING, @encode(TYPE))
+DECLARE_DISPATCH(name);
 
 
 #if INCLUDE_CHARS
@@ -281,31 +321,29 @@ static void AppendIfPrintableFCC(unsigned val, NSMutableString *string)
 #define AppendIfPrintableFCCLong(v, string)	DO_NOTHING
 #endif
 
-
 #else
 #define AppendIfPrintableChar(c, string)	DO_NOTHING
 #define AppendIfPrintableFCC(v, string)		DO_NOTHING
 #endif
 
-DECODE_SCALAR(short, Short, @"%i")
-DECODE_SCALAR(unsigned short, UnsignedShort, @"%u")
-DECODE_SCALAR_BASE(int, Int, @"%i", AppendIfPrintableFCC(value, string), @encode(int))
-DECODE_SCALAR_BASE(unsigned int, UnsignedInt, @"%i", AppendIfPrintableFCC(value, string), @encode(unsigned int))
-DECODE_SCALAR(long long, LongLong, @"%lli")
-DECODE_SCALAR(unsigned long long, UnsignedLongLong, @"%llu")
 
-DECODE_SCALAR_BASE(char, Char, @"%i", AppendIfPrintableChar(value, string), @encode(char))
-DECODE_SCALAR_BASE(unsigned char, UnsignedChar, @"%u", AppendIfPrintableChar(value, string), @encode(unsigned char))
+DECODE_SCALAR(char, Char, @"%i", AppendIfPrintableChar(value, string))
+DECODE_SCALAR(unsigned char, UnsignedChar, @"%u", AppendIfPrintableChar(value, string))
 
-/*
-	In 64-bit, @encode([unsigned] long) gives you q/Q, but we want to be able
-	to handle l/L in case we come across them for some weird reason.
-*/
-DECODE_SCALAR_BASE(long, Long, @"%li", AppendIfPrintableFCCLong(value, string), "l")
-DECODE_SCALAR_BASE(unsigned long, UnsignedLong, @"%lu", AppendIfPrintableFCCLong(value, string), "L")
+DECODE_SCALAR(short, Short, @"%i", DO_NOTHING)
+DECODE_SCALAR(unsigned short, UnsignedShort, @"%u", DO_NOTHING)
 
-DECODE_SCALAR(float, Float, @"%g")
-DECODE_SCALAR(double, Double, @"%g")
+DECODE_SCALAR(int, Int, @"%i", AppendIfPrintableFCC(value, string))
+DECODE_SCALAR(unsigned int, UnsignedInt, @"%i", AppendIfPrintableFCC(value, string))
+
+DECODE_SCALAR(long, Long, @"%li", AppendIfPrintableFCCLong(value, string))
+DECODE_SCALAR(unsigned long, UnsignedLong, @"%lu", AppendIfPrintableFCCLong(value, string))
+
+DECODE_SCALAR(long long, LongLong, @"%lli", DO_NOTHING)
+DECODE_SCALAR(unsigned long long, UnsignedLongLong, @"%llu", DO_NOTHING)
+
+DECODE_SCALAR(float, Float, @"%g", DO_NOTHING)
+DECODE_SCALAR(double, Double, @"%g", DO_NOTHING)
 
 
 static void DecodeBool(DECODER_PARAMS)
@@ -328,7 +366,7 @@ static void DecodeBool(DECODER_PARAMS)
 	*bufOffset += sizeof(value);
 }
 
-DECLARE_DISPATCH_T(Bool, _Bool);
+DECLARE_DISPATCH(Bool);
 
 
 static void DecodeVoid(DECODER_PARAMS)
@@ -337,7 +375,7 @@ static void DecodeVoid(DECODER_PARAMS)
 	[string appendString:@"void"];
 }
 
-DECLARE_DISPATCH_T(Void, void);
+DECLARE_DISPATCH(Void);
 
 
 static void DecodeUndef(DECODER_PARAMS)
@@ -348,7 +386,7 @@ static void DecodeUndef(DECODER_PARAMS)
 	[string appendString:@"<unknown>"];
 }
 
-DECLARE_DISPATCH(Undef, "?");
+DECLARE_DISPATCH(Undef);
 
 
 static void DecodeObject(DECODER_PARAMS)
@@ -360,7 +398,7 @@ static void DecodeObject(DECODER_PARAMS)
 	/*	Special case: block references are encoded as "@?" (_C_ID, _C_UNDEF).
 		Although blocks are indeed objects, their descriptions aren't useful.
 	*/
-	if (encoding[*encOffset] == '?')
+	if (encoding[*encOffset] == kSignatureUndef)
 	{
 		(*encOffset)++;
 		[string appendString:@"^block"];
@@ -392,7 +430,7 @@ static void DecodeObject(DECODER_PARAMS)
 	*bufOffset += sizeof value;
 }
 
-DECLARE_DISPATCH_T(Object, id);
+DECLARE_DISPATCH(Object);
 
 
 static void DecodeClass(DECODER_PARAMS)
@@ -416,7 +454,7 @@ static void DecodeClass(DECODER_PARAMS)
 	*bufOffset += sizeof value;
 }
 
-DECLARE_DISPATCH_T(Class, Class);
+DECLARE_DISPATCH(Class);
 
 
 static void DecodeSelector(DECODER_PARAMS)
@@ -440,7 +478,7 @@ static void DecodeSelector(DECODER_PARAMS)
 	*bufOffset += sizeof value;
 }
 
-DECLARE_DISPATCH_T(Selector, SEL);
+DECLARE_DISPATCH(Selector);
 
 
 static void DecodeAtom(DECODER_PARAMS)
@@ -466,7 +504,7 @@ static void DecodeAtom(DECODER_PARAMS)
 	*bufOffset += sizeof(value);
 }
 
-DECLARE_DISPATCH(Atom, "%");
+DECLARE_DISPATCH(Atom);
 
 
 static void DecodeStruct(DECODER_PARAMS)
@@ -481,20 +519,20 @@ static void DecodeStruct(DECODER_PARAMS)
 	
 	size_t nameStart = *encOffset;
 	
-	while (encoding[*encOffset] != '=' && encoding[*encOffset] != '}')
+	while (encoding[*encOffset] != kTokenAggregateNameSeparator && encoding[*encOffset] != kTokenEndOfStruct)
 	{
 		(*encOffset)++;
 		ASSERT_NOT_END_OF_ENCODING(encoding, encOffset);
 	}
 	
 	// Pointers to structs don't encode struct layout.
-	BOOL unknownStruct = encoding[*encOffset] == '}';
+	BOOL unknownStruct = encoding[*encOffset] == kTokenEndOfStruct;
 	
 	NSString *name = nil;
 	if (INCLUDE_STRUCT_NAMES || unknownStruct)
 	{
 		size_t nameLength = *encOffset - nameStart;
-		if (nameLength != 1 || encoding[nameStart] != '\?')
+		if (nameLength != 1 || encoding[nameStart] != kTokenAnonymousAggregate)
 		{
 			name = [[NSString alloc] initWithBytes:encoding + nameStart
 											length:nameLength
@@ -518,7 +556,7 @@ static void DecodeStruct(DECODER_PARAMS)
 	}
 	else
 	{
-		// Skip the =.
+		// Skip kTokenAggregateNameSeparator.
 		(*encOffset)++;
 		
 		ASSERT_NOT_END_OF_ENCODING(encoding, encOffset);
@@ -526,7 +564,7 @@ static void DecodeStruct(DECODER_PARAMS)
 		[string appendString:@"{ "];
 		BOOL first = YES;
 		
-		while (encoding[*encOffset] != '}')
+		while (encoding[*encOffset] != kTokenEndOfStruct)
 		{
 			if (!first)
 			{
@@ -543,11 +581,11 @@ static void DecodeStruct(DECODER_PARAMS)
 		[string appendString:@" }"];
 	}
 	
-	// Skip the }.
+	// Skip kTokenEndOfStruct.
 	(*encOffset)++;
 }
 
-DECLARE_DISPATCH(Struct, "{");
+DECLARE_DISPATCH(Struct);
 
 
 static inline NSString *ExtractString(const char *strPtr, size_t maxLength)
@@ -587,9 +625,9 @@ static void DecodeArray(DECODER_PARAMS)
 		ASSERT_NOT_END_OF_ENCODING(encoding, encOffset);
 	}
 	
-	// Find the ].
+	// Find kTokenEndOfArray.
 	size_t contentEncStart = *encOffset;
-	while (encoding[*encOffset] != ']')
+	while (encoding[*encOffset] != kTokenEndOfArray)
 	{
 		(*encOffset)++;
 		ASSERT_NOT_END_OF_ENCODING(encoding, encOffset);
@@ -599,7 +637,7 @@ static void DecodeArray(DECODER_PARAMS)
 	[string appendFormat:@"(%zu)", count];
 #endif
 	
-	if (*encOffset - contentEncStart == 1 && encoding[contentEncStart] == 'c')
+	if (*encOffset - contentEncStart == 1 && encoding[contentEncStart] == kSignatureChar)
 	{
 		// Special case to show char arrays as strings.
 		if (buffer != NULL)
@@ -636,11 +674,11 @@ static void DecodeArray(DECODER_PARAMS)
 		[string appendString:@" ]"];
 	}
 	
-	// Skip the ].
+	// Skip kTokenEndOfArray.
 	(*encOffset)++;
 }
 
-DECLARE_DISPATCH(Array, "[");
+DECLARE_DISPATCH(Array);
 
 
 static void DecodeUnion(DECODER_PARAMS)
@@ -659,20 +697,20 @@ static void DecodeUnion(DECODER_PARAMS)
 	
 	size_t nameStart = *encOffset;
 	
-	while (encoding[*encOffset] != '=' && encoding[*encOffset] != ')')
+	while (encoding[*encOffset] !=kTokenAggregateNameSeparator && encoding[*encOffset] != kTokenEndOfUnion)
 	{
 		(*encOffset)++;
 		ASSERT_NOT_END_OF_ENCODING(encoding, encOffset);
 	}
 	
 	// Pointers to unions don't encode struct layout.
-	BOOL unknownStruct = encoding[*encOffset] == ')';
+	BOOL unknownStruct = encoding[*encOffset] == kTokenEndOfUnion;
 	
 	NSString *name = nil;
 	if (INCLUDE_STRUCT_NAMES || unknownStruct)
 	{
 		size_t nameLength = *encOffset - nameStart;
-		if (nameLength != 1 || encoding[nameStart] != '\?')
+		if (nameLength != 1 || encoding[nameStart] != kTokenAnonymousAggregate)
 		{
 			name = [[NSString alloc] initWithBytes:encoding + nameStart
 											length:nameLength
@@ -697,7 +735,7 @@ static void DecodeUnion(DECODER_PARAMS)
 	}
 	else
 	{
-		// Skip the =.
+		// Skip kTokenAggregateNameSeparator.
 		(*encOffset)++;
 		
 		ASSERT_NOT_END_OF_ENCODING(encoding, encOffset);
@@ -708,7 +746,7 @@ static void DecodeUnion(DECODER_PARAMS)
 		size_t end = start;
 		NSMutableString *subString = string;
 		
-		while (encoding[*encOffset] != ')')
+		while (encoding[*encOffset] != kTokenEndOfUnion)
 		{
 			if (!first)
 			{
@@ -733,11 +771,11 @@ static void DecodeUnion(DECODER_PARAMS)
 		[string appendString:@" }"];
 	}
 	
-	// Skip the ).
+	// Skip kTokenEndOfUnion.
 	(*encOffset)++;
 }
 
-DECLARE_DISPATCH(Union, "(");
+DECLARE_DISPATCH(Union);
 
 
 static void DecodeCharPointer(DECODER_PARAMS)
@@ -758,14 +796,14 @@ static void DecodeCharPointer(DECODER_PARAMS)
 	*bufOffset += sizeof value;
 }
 
-DECLARE_DISPATCH_T(CharPointer, char *);
+DECLARE_DISPATCH(CharPointer);
 
 
 static void DecodePointer(DECODER_PARAMS)
 {
 	NSCParameterAssert(encoding != NULL && encOffset != NULL && bufOffset != NULL);
 	
-	if (encoding[*encOffset] == 'c')
+	if (encoding[*encOffset] == kSignatureChar)
 	{
 		(*encOffset)++;
 		DecodeCharPointer(DECODER_CALL_THROUGH);
@@ -789,7 +827,7 @@ static void DecodePointer(DECODER_PARAMS)
 	DecodeValue(encoding, encOffset, (const uint8_t *)value, &subBufOffset, string, maxAlign, NO);
 }
 
-DECLARE_DISPATCH(Pointer, "^");
+DECLARE_DISPATCH(Pointer);
 
 
 static void DecodeBitfield(DECODER_PARAMS)
@@ -797,7 +835,7 @@ static void DecodeBitfield(DECODER_PARAMS)
 	[NSException raise:kJAValueToStringParseError format:@"bitfields are not supported"];
 }
 
-DECLARE_DISPATCH(Bitfield, "b");
+DECLARE_DISPATCH(Bitfield);
 
 
 static const DispatchEntry *sDispatchTable[] =
@@ -848,7 +886,7 @@ enum
 
 static int CompareDispatchEntries(const DispatchEntry **a, const DispatchEntry **b)
 {
-	return (*a)->signature[0] - (*b)->signature[0];
+	return (*a)->signature - (*b)->signature;
 }
 
 
@@ -866,7 +904,7 @@ static void DecodeValue(DECODER_PARAMS, BOOL align)
 	
 	char signature = encoding[*encOffset];
 	
-	DispatchEntry template = { .signature = encoding + *encOffset };
+	DispatchEntry template = { .signature = encoding[*encOffset] };
 	DispatchEntry *searchKey = &template;
 	(*encOffset)++;
 	
