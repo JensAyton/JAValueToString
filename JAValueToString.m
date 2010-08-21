@@ -92,10 +92,10 @@ enum
 	kSignatureUndef				= _C_UNDEF,
 	kSignatureAtom				= _C_ATOM,
 	kSignatureBitfield			= _C_BFLD,
+	kSignatureConst				= _C_CONST,
 	
 	// Unused.
 //	kSignatureVector			= _C_VECTOR,
-//	kSignatureConst				= _C_CONST,
 };
 
 
@@ -180,6 +180,7 @@ enum
 	
 	kAlignVoid				= 1,
 	kAlignUndef				= 1,
+	kAlignConst				= 1,
 	
 	/*	The only information I can find about _C_ATOM is that it is int-sized
 		in Apple's runtimes.
@@ -376,6 +377,14 @@ static void DecodeVoid(DECODER_PARAMS)
 }
 
 DECLARE_DISPATCH(Void);
+
+
+static void DecodeConst(DECODER_PARAMS)
+{
+	// Ignore. In theory it would be nice to attach it to the type of the next object if INCLUDE_TYPE_NAMES, but it's not worth the trouble.
+}
+
+DECLARE_DISPATCH(Const);
 
 
 static void DecodeUndef(DECODER_PARAMS)
@@ -866,14 +875,15 @@ static const DispatchEntry *sDispatchTable[] =
 	&sDispatchInt,
 	&sDispatchLong,
 	&sDispatchLongLong,
+	&sDispatchConst,
 	&sDispatchShort,
 	&sDispatchVoid,
 	&sDispatchStruct,
 	
-	/*	MISSING: _C_VECTOR, _C_CONST.
-		I have no idea when, if ever, these are generated. (In particular, I
-		expected vector to be generated for Altivec or SSE vector types
-		-- vector float or __m128 -- but these are not encoded at all.)
+	/*	MISSING: _C_VECTOR.
+		I have no idea when, if ever, this is generated. (In particular, I
+		expected it to be generated for Altivec or SSE vector types
+		-- such as vector float or __m128 -- but these are not encoded at all.)
 	*/
 };
 
@@ -886,6 +896,7 @@ enum
 
 static int CompareDispatchEntries(const DispatchEntry **a, const DispatchEntry **b)
 {
+	NSCParameterAssert(a != NULL && *a != NULL && b != NULL && *b != NULL);
 	return (*a)->signature - (*b)->signature;
 }
 
@@ -908,10 +919,12 @@ static void DecodeValue(DECODER_PARAMS, BOOL align)
 	DispatchEntry *searchKey = &template;
 	(*encOffset)++;
 	
-	DispatchEntry *dispatch = *(DispatchEntry **)bsearch(&searchKey, sDispatchTable, kDispatchTableSize, sizeof *sDispatchTable, (int(*)(const void *, const void *))CompareDispatchEntries);
-	
-	if (dispatch != NULL)
+	DispatchEntry **found = bsearch(&searchKey, sDispatchTable, kDispatchTableSize, sizeof *sDispatchTable, (int(*)(const void *, const void *))CompareDispatchEntries);
+	if (found != NULL)
 	{
+		DispatchEntry *dispatch = *found;
+		NSCAssert(dispatch != NULL, @"Search of dispatch table returned NULL entry.");
+		
 		if (align)
 		{
 			*bufOffset = RoundUp(*bufOffset, dispatch->alignment);

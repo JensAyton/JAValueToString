@@ -91,6 +91,14 @@ int main (int argc, const char * argv[])
 	BitfieldTest thisShouldFail;
 	JA_DUMP(thisShouldFail);
 	
+	int integer = 768;
+	JA_DUMP(integer);
+	
+	const char *string = "This am an string.";
+	JA_DUMP(string);
+	
+	JA_DUMP("This, too, is a string.");
+	
 	NSLog(@"Done.");
 	
 	[pool drain];
