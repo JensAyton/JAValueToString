@@ -67,6 +67,50 @@ static NSString * const kJAValueToStringParseError = @"se.ayton.jens.JAValueToSt
 
 enum
 {
+	kSignaturePointer			= _C_PTR,
+	kSignatureBool				= _C_BOOL,
+	kSignatureChar				= _C_CHR,	// NOTE: @encode() assumes char is signed and doesn't differentiate it from signed char.
+	kSignatureUnsignedChar		= _C_UCHR,
+	kSignatureShort				= _C_SHT,
+	kSignatureUnsignedShort		= _C_USHT,
+	kSignatureInt				= _C_INT,
+	kSignatureUnsignedInt		= _C_UINT,
+	kSignatureLong				= _C_LNG,
+	kSignatureUnsignedLong		= _C_ULNG,
+	kSignatureLongLong			= _C_LNG_LNG,
+	kSignatureUnsignedLongLong	= _C_ULNG_LNG,
+	kSignatureFloat				= _C_FLT,
+	kSignatureDouble			= _C_DBL,
+	kSignatureSelector			= _C_SEL,
+	kSignatureCharPointer		= _C_CHARPTR,
+	kSignatureObject			= _C_ID,
+	kSignatureClass				= _C_CLASS,
+	kSignatureStruct			= _C_STRUCT_B,
+	kSignatureArray				= _C_ARY_B,
+	kSignatureUnion				= _C_UNION_B,
+	kSignatureVoid				= _C_VOID,
+	kSignatureUndef				= _C_UNDEF,
+	kSignatureAtom				= _C_ATOM,
+	kSignatureBitfield			= _C_BFLD,
+	
+	// Unused.
+//	kSignatureVector			= _C_VECTOR,
+//	kSignatureConst				= _C_CONST,
+};
+
+
+enum
+{
+	kTokenAnonymousAggregate	= '\?',
+	kTokenAggregateNameSeparator= '=',
+	kTokenEndOfStruct			= _C_STRUCT_E,
+	kTokenEndOfArray			= _C_ARY_E,
+	kTokenEndOfUnion			= _C_UNION_E,
+};
+
+
+enum
+{
 	/*	NOTE: you might think the __alignof__ operator could do this for us.
 		
 		You'd be wrong.
@@ -75,7 +119,7 @@ enum
 #if __x86_64__
 	kAlignPointer			= 8,
 	kAlignBool				= 1,
-	kAlignChar				= 1,	// NOTE: @encode() assumes char is signed and doesn't differentiate it from signed char.
+	kAlignChar				= 1,
 	kAlignUnsignedChar		= 1,
 	kAlignShort				= 2,
 	kAlignUnsignedShort		= 2,
@@ -144,50 +188,6 @@ enum
 	
 	//	Unsupported.
 	kAlignBitfield			= 1
-};
-
-
-enum
-{
-	kSignaturePointer			= _C_PTR,
-	kSignatureBool				= _C_BOOL,
-	kSignatureChar				= _C_CHR,
-	kSignatureUnsignedChar		= _C_UCHR,
-	kSignatureShort				= _C_SHT,
-	kSignatureUnsignedShort		= _C_USHT,
-	kSignatureInt				= _C_INT,
-	kSignatureUnsignedInt		= _C_UINT,
-	kSignatureLong				= _C_LNG,
-	kSignatureUnsignedLong		= _C_ULNG,
-	kSignatureLongLong			= _C_LNG_LNG,
-	kSignatureUnsignedLongLong	= _C_ULNG_LNG,
-	kSignatureFloat				= _C_FLT,
-	kSignatureDouble			= _C_DBL,
-	kSignatureSelector			= _C_SEL,
-	kSignatureCharPointer		= _C_CHARPTR,
-	kSignatureObject			= _C_ID,
-	kSignatureClass				= _C_CLASS,
-	kSignatureStruct			= _C_STRUCT_B,
-	kSignatureArray				= _C_ARY_B,
-	kSignatureUnion				= _C_UNION_B,
-	kSignatureVoid				= _C_VOID,
-	kSignatureUndef				= _C_UNDEF,
-	kSignatureAtom				= _C_ATOM,
-	kSignatureBitfield			= _C_BFLD,
-	
-	// Unused.
-//	kSignatureVector			= _C_VECTOR,
-//	kSignatureConst				= _C_CONST,
-};
-
-
-enum
-{
-	kTokenAnonymousAggregate	= '\?',
-	kTokenAggregateNameSeparator= '=',
-	kTokenEndOfStruct			= _C_STRUCT_E,
-	kTokenEndOfArray			= _C_ARY_E,
-	kTokenEndOfUnion			= _C_UNION_E,
 };
 
 
