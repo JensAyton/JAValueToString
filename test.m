@@ -1,4 +1,5 @@
 #import "JAValueToString.h"
+#import <complex.h>
 
 
 typedef int(*MyFunc)(NSRect r);
@@ -15,7 +16,7 @@ typedef union MyUnion
 typedef struct MyStruct
 {
 	char c2;
-	double x;
+	complex double x;
 	unsigned char y;
 	_Bool flag;
 	NSString *s;
@@ -62,7 +63,7 @@ int main (int argc, const char * argv[])
 	MyStruct testCase =
 	{
 		.c2 = 'A',
-		.x = 6,
+		.x = 6 + 8 * _Complex_I,
 		.y = '7',
 		.flag = false,
 		.s = @"an NSString",
@@ -98,6 +99,9 @@ int main (int argc, const char * argv[])
 	JA_DUMP(string);
 	
 	JA_DUMP("This, too, is a string.");
+	
+	complex double complexDouble = 1 - 2 * _Complex_I;
+	JA_DUMP(complexDouble);
 	
 	NSLog(@"Done.");
 	

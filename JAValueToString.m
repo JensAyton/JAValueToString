@@ -93,6 +93,7 @@ enum
 	kSignatureAtom				= _C_ATOM,
 	kSignatureBitfield			= _C_BFLD,
 	kSignatureConst				= _C_CONST,
+	kSignatureComplex			= 'j',
 	
 	// Unused.
 //	kSignatureVector			= _C_VECTOR,
@@ -178,9 +179,11 @@ enum
 	kAlignArray				= 1,
 	kAlignUnion				= 1,
 	
+	// Zero-length things and qualifiers don't need aligment.
 	kAlignVoid				= 1,
 	kAlignUndef				= 1,
 	kAlignConst				= 1,
+	kAlignComplex			= 1,
 	
 	/*	The only information I can find about _C_ATOM is that it is int-sized
 		in Apple's runtimes.
@@ -203,10 +206,11 @@ enum
 #endif
 
 
-#define DECODER_PARAMS const char * const encoding, size_t * const encOffset, const uint8_t * const buffer, size_t * const bufOffset, NSMutableString *string, size_t * const maxAlign
-#define DECODER_CALL_THROUGH encoding, encOffset, buffer, bufOffset, string, maxAlign
+#define DECODER_PARAMS const char * const encoding, size_t * const encOffset, const uint8_t * const buffer, size_t * const bufOffset, NSMutableString *string, size_t * const maxAlign, BOOL align
+#define DECODER_CALL_THROUGH_ALIGN(subAlign) encoding, encOffset, buffer, bufOffset, string, maxAlign, subAlign
+#define DECODER_CALL_THROUGH DECODER_CALL_THROUGH_ALIGN(align)
 
-static void DecodeValue(DECODER_PARAMS, BOOL align);
+static void DecodeValue(DECODER_PARAMS);
 
 
 typedef void (*Decoder)(DECODER_PARAMS);
@@ -385,6 +389,23 @@ static void DecodeConst(DECODER_PARAMS)
 }
 
 DECLARE_DISPATCH(Const);
+
+
+static void DecodeComplex(DECODER_PARAMS)
+{
+	// A _Complex x, encoded as "jx", is simply two xes in a row.
+	const size_t origEncOffset = *encOffset;
+	[string appendString:@"("];
+	DecodeValue(DECODER_CALL_THROUGH);
+	
+	*encOffset = origEncOffset;
+	[string appendString:@" + "];
+	DecodeValue(DECODER_CALL_THROUGH);
+	
+	[string appendString:@"i)"];
+}
+
+DECLARE_DISPATCH(Complex);
 
 
 static void DecodeUndef(DECODER_PARAMS)
@@ -584,7 +605,7 @@ static void DecodeStruct(DECODER_PARAMS)
 				first = NO;
 			}
 			
-			DecodeValue(DECODER_CALL_THROUGH, YES);
+			DecodeValue(DECODER_CALL_THROUGH_ALIGN(YES));
 		}
 		
 		[string appendString:@" }"];
@@ -873,6 +894,7 @@ static const DispatchEntry *sDispatchTable[] =
 	&sDispatchDouble,
 	&sDispatchFloat,
 	&sDispatchInt,
+	&sDispatchComplex,
 	&sDispatchLong,
 	&sDispatchLongLong,
 	&sDispatchConst,
@@ -909,7 +931,7 @@ static inline size_t RoundUp(size_t size, size_t factor)
 }
 
 
-static void DecodeValue(DECODER_PARAMS, BOOL align)
+static void DecodeValue(DECODER_PARAMS)
 {
 	NSCParameterAssert(encoding != NULL && encOffset != NULL && bufOffset != NULL && maxAlign != NULL);
 	
