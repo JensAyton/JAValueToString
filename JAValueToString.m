@@ -23,7 +23,7 @@
 	DEALINGS IN THE SOFTWARE.
 */
 
-#import <Foundation/Foundation.h>
+#import "JAValueToString.h"
 #import <objc/runtime.h>
 
 
@@ -216,13 +216,13 @@ static void DecodeValue(DECODER_PARAMS);
 typedef void (*Decoder)(DECODER_PARAMS);
 
 
-typedef struct
+typedef struct DispatchEntry
 {
-	Decoder		decoder;
-	unsigned	alignment;
 #if NAMES_IN_DISPATCH_TABLE
 	const char	*name;
 #endif
+	Decoder		decoder;
+	uint8_t		alignment;
 	char		signature;
 } DispatchEntry;
 
@@ -385,7 +385,11 @@ DECLARE_DISPATCH(Void);
 
 static void DecodeConst(DECODER_PARAMS)
 {
-	// Ignore. In theory it would be nice to attach it to the type of the next object if INCLUDE_TYPE_NAMES, but it's not worth the trouble.
+	/* Ignore the const, and move on to the actual value.
+		In theory it would be nice to attach it to the type of the next object
+		if INCLUDE_TYPE_NAMES, but it's not worth the trouble.
+	*/
+	DecodeValue(DECODER_CALL_THROUGH);
 }
 
 DECLARE_DISPATCH(Const);

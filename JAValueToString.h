@@ -62,7 +62,7 @@
 	
 	val: any lvalue.
 */
-#define JA_DUMP(val)  NSLog(@"%s = %@", #val, JA_ENCODE(val))
+#define JA_DUMP(val)  JA_DUMP_LOG(@"%s = %@", #val, JA_ENCODE(val))
 
 
 /*	JAValueToString(encoding, value, expectedSize)
@@ -85,5 +85,17 @@
 	parsing errors. If it is 0, these checks are skipped and a crash may
 	result.
 */
+#if __cplusplus
+extern "C"
+#endif
+NSString *JAValueToString(const char *encoding, const void *value, size_t expectedSize);
 
-FOUNDATION_EXTERN NSString *JAValueToString(const char *encoding, const void *value, size_t expectedSize);
+
+/*	JA_DUMP_LOG(format, ...)
+	
+	Logging primitive for JA_DUMP(). By default, this is NSLog(), but it can
+	be defined as a custom function before JAValueToString.h is included.
+*/
+#ifndef JA_DUMP_LOG
+#define JA_DUMP_LOG(...) NSLog(__VA_ARGS__)
+#endif
