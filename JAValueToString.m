@@ -545,6 +545,9 @@ static void DecodeStruct(DECODER_PARAMS)
 		where Name is a string (or ? if no name is known). <encoding> is a
 		series of type encodings. For pointers to structs, the first form with
 		no content encoding is used.
+		
+		Note that the name may not be an identifier. For C++ template classes,
+		the template parameters are included, as in {complex<double>=jd}.
 	*/
 	
 	size_t nameStart = *encOffset;

@@ -85,4 +85,5 @@
 	parsing errors. If it is 0, these checks are skipped and a crash may
 	result.
 */
-NSString *JAValueToString(const char *encoding, const void *value, size_t expectedSize);
+
+FOUNDATION_EXTERN NSString *JAValueToString(const char *encoding, const void *value, size_t expectedSize);
