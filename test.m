@@ -38,18 +38,12 @@ typedef struct MyStruct
 } MyStruct;
 
 
-typedef struct
+typedef struct MyStruct2
 {
 	short a;
 	short c;
 	char b;
 } MyStruct2;
-
-
-typedef struct
-{
-	int bitfield: 4;
-} BitfieldTest;
 
 
 int main (int argc, const char * argv[])
@@ -89,9 +83,6 @@ int main (int argc, const char * argv[])
 	MyStruct2 alignmentTest = {0};
 	JA_DUMP(alignmentTest);
 	
-	BitfieldTest thisShouldFail;
-	JA_DUMP(thisShouldFail);
-	
 	int integer = 768;
 	JA_DUMP(integer);
 	
@@ -102,6 +93,30 @@ int main (int argc, const char * argv[])
 	
 	complex double complexDouble = 1 - 2 * _Complex_I;
 	JA_DUMP(complexDouble);
+	
+	// Known failure case: alignment is calculated incorrectly.
+	struct NestedAlignmentTest
+	{
+		int16_t			a;
+		struct
+		{
+			// Note: alignment of s is dependent on c, which is not detected.
+			int16_t		b;
+			int64_t		c;
+		}				s;
+	} nestedAlignmentTestFAIL;	//= { 1, { 2, 3 } };
+	memset(&nestedAlignmentTestFAIL, 0xFF, sizeof nestedAlignmentTestFAIL);
+	nestedAlignmentTestFAIL.a = 1;
+	nestedAlignmentTestFAIL.s.b = 2;
+	nestedAlignmentTestFAIL.s.c = 3;
+	JA_DUMP(nestedAlignmentTestFAIL);
+	
+	// Known failure case: bitfields are not supported.
+	struct BitfieldTest
+	{
+		int bitfield: 4;
+	} bitfieldTestFAIL;
+	JA_DUMP(bitfieldTestFAIL);
 	
 	NSLog(@"Done.");
 	

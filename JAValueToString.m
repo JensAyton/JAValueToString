@@ -49,6 +49,9 @@
 // If nonzero, the encoding string is included along with the decoded data.
 #define INCLUDE_RAW_ENCODING	( 0 )
 
+// If nonzero, -debugDescription is preferred over -description for objects.
+#define USE_DEBUG_DESCRIPTION	( 1 )
+
 
 /*	Instead of actually printing decoded data, print the sorted order for the
 	dispatch table so that bsort will work.
@@ -414,7 +417,7 @@ DECLARE_DISPATCH(Complex);
 
 static void DecodeUndef(DECODER_PARAMS)
 {
-	/*	Used for function pointers, reused in a silly way to handle blocks
+	/*	Used for function pointers, reused in a silly way to identify blocks
 		(see DecodeObject()), and possibly other cases.
 	*/
 	[string appendString:@"<unknown>"];
@@ -451,7 +454,21 @@ static void DecodeObject(DECODER_PARAMS)
 			}
 			else
 			{
-				[string appendString:value ? [value description] : @"nil"];
+				NSString *description = nil;
+				
+				if (value != nil)
+				{
+#if USE_DEBUG_DESCRIPTION
+					if ([value respondsToSelector:@selector(debugDescription)])  description = [value performSelector:@selector(debugDescription)];
+#endif
+					if (description == nil)  description = [value description];
+				}
+				else
+				{
+					description = @"nil";
+				}
+				
+				[string appendString:description];
 			}
 		}
 		else
