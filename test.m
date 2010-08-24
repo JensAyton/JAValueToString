@@ -94,22 +94,19 @@ int main (int argc, const char * argv[])
 	complex double complexDouble = 1 - 2 * _Complex_I;
 	JA_DUMP(complexDouble);
 	
-	// Known failure case: alignment is calculated incorrectly.
+	/*	Previous failure case: calculation of alignment is dependent on the
+		highest-alignment field of the inner struct, i.e. c.
+	*/
 	struct NestedAlignmentTest
 	{
 		int16_t			a;
 		struct
 		{
-			// Note: alignment of s is dependent on c, which is not detected.
 			int16_t		b;
 			int64_t		c;
 		}				s;
-	} nestedAlignmentTestFAIL;	//= { 1, { 2, 3 } };
-	memset(&nestedAlignmentTestFAIL, 0xFF, sizeof nestedAlignmentTestFAIL);
-	nestedAlignmentTestFAIL.a = 1;
-	nestedAlignmentTestFAIL.s.b = 2;
-	nestedAlignmentTestFAIL.s.c = 3;
-	JA_DUMP(nestedAlignmentTestFAIL);
+	} nestedAlignmentTest = { 1, { 2, 3 } };
+	JA_DUMP(nestedAlignmentTest);
 	
 	// Known failure case: bitfields are not supported.
 	struct BitfieldTest

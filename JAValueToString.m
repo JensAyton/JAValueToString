@@ -177,16 +177,21 @@ enum
 	kAlignObject			= kAlignPointer,
 	kAlignClass				= kAlignObject,
 	
-	// Aggregates don't need alignment, as their first element will be aligned.
-	kAlignStruct			= 1,
-	kAlignArray				= 1,
-	kAlignUnion				= 1,
-	
-	// Zero-length things and qualifiers don't need aligment.
+	// Zero-length things and qualifiers don't need aligment. No alignment == 1-byte alignment.
 	kAlignVoid				= 1,
 	kAlignUndef				= 1,
 	kAlignConst				= 1,
 	kAlignComplex			= 1,
+	
+	/*	Aggregates have special alignment needs: their alignment is the highest
+		alignment of any member. This is signaled with a 0, and handled by
+		doing a "dry run" with NULL data and using the resulting maxAlign.
+		This might not work on all platforms, but then, that applies to our
+		handling of alignment in general.
+	*/
+	kAlignStruct			= 0,
+	kAlignArray				= 0,
+	kAlignUnion				= 0,
 	
 	/*	The only information I can find about _C_ATOM is that it is int-sized
 		in Apple's runtimes.
@@ -973,14 +978,23 @@ static void DecodeValue(DECODER_PARAMS)
 		
 		if (align)
 		{
-			*bufOffset = RoundUp(*bufOffset, dispatch->alignment);
-			*maxAlign = MAX(*maxAlign, dispatch->alignment);
+			size_t alignment = dispatch->alignment;
+			if (alignment == 0)
+			{
+				// Aggregate; find maximum element alignment.
+				size_t subEncOffset = *encOffset;
+				size_t subBufOffset = *bufOffset;
+				alignment = 1;
+				dispatch->decoder(encoding, &subEncOffset, NULL, &subBufOffset, nil, &alignment, YES);
+			}
+			*bufOffset = RoundUp(*bufOffset, alignment);
+			*maxAlign = MAX(*maxAlign, alignment);
 		}
 		dispatch->decoder(DECODER_CALL_THROUGH);
 		return;
 	}
 	
-	[NSException raise:kJAValueToStringParseError format:@"unknown type code '%c' in encoding string \"%s\"", signature, encoding];
+	[NSException raise:kJAValueToStringParseError format:@"unknown type code '%c' in encoding string \"%s\"", signature, encoding];
 	
 	(*encOffset)++;
 }
