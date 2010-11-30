@@ -422,8 +422,8 @@ DECLARE_DISPATCH(Complex);
 
 static void DecodeUndef(DECODER_PARAMS)
 {
-	/*	Used for function pointers, reused in a silly way to identify blocks
-		(see DecodeObject()), and possibly other cases.
+	/*	Used for function pointers and C++ vtables, reused in a silly way to
+		identify blocks (see DecodeObject()), and possibly other cases.
 	*/
 	[string appendString:@"<unknown>"];
 }
