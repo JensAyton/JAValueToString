@@ -54,7 +54,7 @@
 
 
 /*	Instead of actually printing decoded data, print the sorted order for the
-	dispatch table so that bsort will work.
+	dispatch table so that bsearch will work.
 */
 #define SORT_DISPATCH_TABLE		( 0 )
 
