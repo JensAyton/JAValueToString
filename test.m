@@ -6,6 +6,17 @@ typedef int(*MyFunc)(NSRect r);
 typedef int(^MyBlock)(NSRect r);
 
 
+#if defined(__has_feature) && __has_feature(objc_arc)
+#define USING_ARC				1
+#define AUTORELEASE_ENTER		@autoreleasepool {
+#define AUTORELEASE_EXIT		}
+#else
+#define USING_ARC				0
+#define AUTORELEASE_ENTER		{ NSAutoreleasePool *autoreleasePool__ = [NSAutoreleasePool new];
+#define AUTORELEASE_EXIT		[autoreleasePool__ drain]; }
+#endif
+
+
 typedef union MyUnion
 {
 	double b[6];
@@ -19,7 +30,9 @@ typedef struct MyStruct
 	complex double x;
 	unsigned char y;
 	_Bool flag;
+#if !USING_ARC
 	NSString *s;
+#endif
 	Class cls;
 	const char * const str;
 	int * a;
@@ -33,7 +46,9 @@ typedef struct MyStruct
 	int array[5];
 	MyUnion uni;
 	MyFunc fu;
+#if !USING_ARC
 	MyBlock bl;
+#endif
 	int fcc;
 } MyStruct;
 
@@ -48,7 +63,7 @@ typedef struct MyStruct2
 
 int main (int argc, const char * argv[])
 {
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+	AUTORELEASE_ENTER
 	
 	NSRect r = NSMakeRect(1, 2, 3, 4);
 	int a = 42;
@@ -60,7 +75,9 @@ int main (int argc, const char * argv[])
 		.x = 6 + 8 * _Complex_I,
 		.y = '7',
 		.flag = false,
+#if !USING_ARC
 		.s = @"an NSString",
+#endif
 		.cls = [NSArray class],
 		.str = "a C string",
 		.a = &a,
@@ -117,6 +134,6 @@ int main (int argc, const char * argv[])
 	
 	NSLog(@"Done.");
 	
-	[pool drain];
+	AUTORELEASE_EXIT
 	return 0;
 }

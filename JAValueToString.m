@@ -65,6 +65,21 @@
 #endif
 
 
+#if defined(__has_feature) && __has_feature(objc_arc)
+#define AUTORELEASE(x)			(x)
+#define AUTORELEASE_ENTER		@autoreleasepool {
+#define AUTORELEASE_EXIT		}
+#define ARC_UNSAFE_UNRETAINED	__unsafe_unretained
+#define ARC_WEAK				__weak
+#else
+#define AUTORELEASE(x)			[x autorelease]
+#define AUTORELEASE_ENTER		{ NSAutoreleasePool *autoreleasePool__ = [NSAutoreleasePool new];
+#define AUTORELEASE_EXIT		[autoreleasePool__ drain]; }
+#define ARC_UNSAFE_UNRETAINED
+#define ARC_WEAK
+#endif
+
+
 static NSString * const kJAValueToStringParseError = @"se.ayton.jens.JAValueToString parse error";
 
 
@@ -203,6 +218,15 @@ enum
 };
 
 
+static inline NSString *StringWithBytesLengthEncoding(const void *bytes, NSUInteger length, NSStringEncoding encoding)
+{
+	NSString *result = [[NSString alloc] initWithBytes:bytes
+												length:length
+											  encoding:encoding];
+	return AUTORELEASE(result);
+}
+
+
 #define DO_NOTHING					do {} while (0)
 
 
@@ -323,7 +347,7 @@ static void AppendIfPrintableFCC(unsigned val, NSMutableString *string)
 	}
 	if (!haveAlnum)  return;
 	
-	NSString *fcc = [[[NSString alloc] initWithBytes:bytes length:4 encoding:NSMacOSRomanStringEncoding] autorelease];
+	NSString *fcc = StringWithBytesLengthEncoding(bytes, 4, NSMacOSRomanStringEncoding);
 	[string appendFormat:@" (='%@')", fcc];
 }
 
@@ -450,7 +474,8 @@ static void DecodeObject(DECODER_PARAMS)
 		TYPE_NAME(string, @"id");
 		if (buffer != NULL)
 		{
-			value = *((const id *)(buffer + *bufOffset));
+			const void *valuePointer = ((const void *)(buffer + *bufOffset));
+			value = *(ARC_UNSAFE_UNRETAINED const id *)valuePointer;
 			
 			if ([value isKindOfClass:[NSString class]])
 			{
@@ -497,7 +522,8 @@ static void DecodeClass(DECODER_PARAMS)
 	Class value;
 	if (buffer != NULL)
 	{
-		value = *((const Class *)(buffer + *bufOffset));
+		const void *valuePointer = ((const void *)(buffer + *bufOffset));
+		value = *(ARC_UNSAFE_UNRETAINED const Class *)valuePointer;
 		
 		[string appendFormat:@"class %@", value ? NSStringFromClass(value) : @"Nil"];
 	}
@@ -593,10 +619,7 @@ static void DecodeStruct(DECODER_PARAMS)
 		size_t nameLength = *encOffset - nameStart;
 		if (nameLength != 1 || encoding[nameStart] != kTokenAnonymousAggregate)
 		{
-			name = [[NSString alloc] initWithBytes:encoding + nameStart
-											length:nameLength
-										  encoding:NSUTF8StringEncoding];
-			[name autorelease];
+			name = StringWithBytesLengthEncoding(encoding + nameStart, nameLength, NSUTF8StringEncoding);
 		}
 		if (name == nil)  name = @"<anonymous struct>";
 	}
@@ -654,17 +677,17 @@ static inline NSString *ExtractString(const char *strPtr, size_t maxLength)
 	size_t length = 0;
 	while (length < maxLength && strPtr[length] != '\0')  length++;
 	
-	NSString *str = [[NSString alloc] initWithBytes:strPtr length:length encoding:NSUTF8StringEncoding];
+	NSString *str = StringWithBytesLengthEncoding(strPtr, length, NSUTF8StringEncoding);
 	if (str == nil)
 	{
-		str = [[NSString alloc] initWithBytes:strPtr length:length encoding:[NSString defaultCStringEncoding]];
+		str = StringWithBytesLengthEncoding(strPtr, length, [NSString defaultCStringEncoding]);
 	}
 	if (str == nil)
 	{
-		str = [[NSString alloc] initWithBytes:strPtr length:length encoding:NSISOLatin1StringEncoding];
+		str = StringWithBytesLengthEncoding(strPtr, length, NSISOLatin1StringEncoding);
 	}
 	
-	return [str autorelease];
+	return str;
 }
 
 
@@ -771,10 +794,7 @@ static void DecodeUnion(DECODER_PARAMS)
 		size_t nameLength = *encOffset - nameStart;
 		if (nameLength != 1 || encoding[nameStart] != kTokenAnonymousAggregate)
 		{
-			name = [[NSString alloc] initWithBytes:encoding + nameStart
-											length:nameLength
-										  encoding:NSUTF8StringEncoding];
-			[name autorelease];
+			name = StringWithBytesLengthEncoding(encoding + nameStart, nameLength, NSUTF8StringEncoding);
 			name = [@"union " stringByAppendingString:name];
 		}
 		if (name == nil)  name = @"<anonymous union>";
@@ -1039,7 +1059,8 @@ NSString *JAValueToString(const char *encoding, const void *value, size_t expect
 	[result appendFormat:@"%s :: ", encoding];
 #endif
 	
-	NSAutoreleasePool *pool = [NSAutoreleasePool new];
+	AUTORELEASE_ENTER
+	
 	const uint8_t *buffer = value;
 	size_t encOffset = 0;
 	size_t bufOffset = 0;
@@ -1087,7 +1108,7 @@ NSString *JAValueToString(const char *encoding, const void *value, size_t expect
 		}
 	}
 	
-	[pool drain];
+	AUTORELEASE_EXIT
 	
 	return result;
 	
