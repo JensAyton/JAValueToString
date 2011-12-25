@@ -3,39 +3,39 @@
 	
 	Debugging utility to print the value of (almost) any variable.
 	Limitations:
-	  * PPC64 and ARM architectures are currently not supported (I don't have
+	  * PPC64 and ARM architectures are currently not supported (I don’t have
 	    the necessary alignment information).
 	  * Only lvalues can be printed, since it is necessary to take the address
 	    of the target.
-	  * Function pointers are described as "&<unknown>", because @encode()
-	    describes them as a pointer to "undef".
-	  * Bitfields are not supported, because I'm lazy.
+	  * Function pointers are described as “&<unknown>”, because @encode()
+	    describes them as a pointer to “undef”.
+	  * Bitfields are not supported, because I’m lazy.
 	  * Altivec and SSE vector types are not supported.
 	  * Aggregates whose alignment is modified using #pragma pack or similar
 	    will not be displayed properly.
 	
 	These last two are due to compiler limitations - vector types and custom
-	aligment aren't noted in @encode() strings. In these cases, an error string
-	is returned (unless you're calling JAValueToString() directly with 0 as
+	aligment aren’t noted in @encode() strings. In these cases, an error string
+	is returned (unless you’re calling JAValueToString() directly with 0 as
 	expectedSize, in which case a crash is likely).
 	
 	This utility is not especially robust and should be used for debugging
 	only.
 	
 	
-	Copyright (C) 2010 Jens Ayton
-
+	Copyright © 2010–2011 Jens Ayton
+	
 	Permission is hereby granted, free of charge, to any person obtaining a
-	copy of this software and associated documentation files (the "Software"),
+	copy of this software and associated documentation files (the “Software”),
 	to deal in the Software without restriction, including without limitation
 	the rights to use, copy, modify, merge, publish, distribute, sublicense,
 	and/or sell copies of the Software, and to permit persons to whom the
 	Software is furnished to do so, subject to the following conditions:
-
+	
 	The above copyright notice and this permission notice shall be included in
 	all copies or substantial portions of the Software.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
 	THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER

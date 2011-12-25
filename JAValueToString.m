@@ -463,6 +463,8 @@ static void DecodeObject(DECODER_PARAMS)
 	
 	/*	Special case: block references are encoded as "@?" (_C_ID, _C_UNDEF).
 		Although blocks are indeed objects, their descriptions aren't useful.
+		
+		FIXME: extract block type signatures for stuff compiled with clang?
 	*/
 	if (encoding[*encOffset] == kSignatureUndef)
 	{
