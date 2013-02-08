@@ -591,6 +591,31 @@ static void DecodeAtom(DECODER_PARAMS)
 DECLARE_DISPATCH(Atom);
 
 
+static void DecodeVTable(DECODER_PARAMS)
+{
+	NSCParameterAssert(bufOffset != NULL);
+	
+	TYPE_NAME(string, @"vtable");
+	const void *value = NULL;
+	if (buffer != NULL)
+	{
+		value = *((const void **)(buffer + *bufOffset));
+		[string appendFormat:@"<vtable %p>", value];
+	}
+	else
+	{
+		[string appendString:@"<vtable>"];
+	}
+	*bufOffset += sizeof(value);
+	if (align)
+	{
+		*maxAlign = MAX(*maxAlign, kAlignPointer);
+	}
+}
+
+// No DECLARE_DISPATCH(VTable), since it isn't dispatched normally.
+
+
 static void DecodeStruct(DECODER_PARAMS)
 {
 	NSCParameterAssert(encoding != NULL && encOffset != NULL && bufOffset != NULL);
@@ -647,6 +672,16 @@ static void DecodeStruct(DECODER_PARAMS)
 		
 		[string appendString:@"{ "];
 		BOOL first = YES;
+		
+		// Check for C++ vtable (^^?).
+		if (encoding[*encOffset] == kSignaturePointer &&
+			encoding[*encOffset + 1] == kSignaturePointer &&
+			encoding[*encOffset + 2] == kSignatureUndef)
+		{
+			DecodeVTable(DECODER_CALL_THROUGH_ALIGN(YES));
+			*encOffset += 3;
+			first = NO;
+		}
 		
 		while (encoding[*encOffset] != kTokenEndOfStruct)
 		{
