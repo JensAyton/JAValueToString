@@ -70,13 +70,11 @@
 #define AUTORELEASE_ENTER		@autoreleasepool {
 #define AUTORELEASE_EXIT		}
 #define ARC_UNSAFE_UNRETAINED	__unsafe_unretained
-#define ARC_WEAK				__weak
 #else
 #define AUTORELEASE(x)			[x autorelease]
 #define AUTORELEASE_ENTER		{ NSAutoreleasePool *autoreleasePool__ = [NSAutoreleasePool new];
 #define AUTORELEASE_EXIT		[autoreleasePool__ drain]; }
 #define ARC_UNSAFE_UNRETAINED
-#define ARC_WEAK
 #endif
 
 
