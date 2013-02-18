@@ -768,10 +768,6 @@ static void DecodeArray(DECODER_PARAMS)
 		ASSERT_NOT_END_OF_ENCODING(encoding, encOffset);
 	}
 	
-#if INCLUDE_ARRAY_COUNTS
-	[string appendFormat:@"(%zu)", count];
-#endif
-	
 	if (*encOffset - contentEncStart == 1 && encoding[contentEncStart] == kSignatureChar)
 	{
 		// Special case to show char arrays as strings.
@@ -787,6 +783,10 @@ static void DecodeArray(DECODER_PARAMS)
 	}
 	else
 	{
+#if INCLUDE_ARRAY_COUNTS
+		[string appendFormat:@"(%zu)", count];
+#endif
+		
 		[string appendString:@"[ "];
 		
 		// Iterate over array contents.
