@@ -9,7 +9,7 @@
 #import <objc/runtime.h>
 
 
-#define FIND_ALIGNMENT(NAME, TYPE)  printf("\tkAlign%s\t=%zu,\n", #NAME, offsetof(struct{char oddifier; TYPE target;}, target), __alignof__(TYPE))
+#define FIND_ALIGNMENT(NAME, TYPE)  printf("\tkAlign%s\t= %zu,\n", #NAME, offsetof(struct{char oddifier; TYPE target;}, target) /*, __alignof__(TYPE)*/)
 
 
 int main (int argc, const char * argv[])

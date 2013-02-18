@@ -3,8 +3,8 @@
 	
 	Debugging utility to print the value of (almost) any variable.
 	Limitations:
-	  * PPC64 and ARM architectures are currently not supported (I don’t have
-	    the necessary alignment information).
+	  * PPC64 is currently not supported (I don’t have the necessary alignment
+		information).
 	  * Only lvalues can be printed, since it is necessary to take the address
 	    of the target.
 	  * Function pointers are described as “&<unknown>”, because @encode()
@@ -23,7 +23,7 @@
 	only.
 	
 	
-	Copyright © 2010–2011 Jens Ayton
+	Copyright © 2010–2013 Jens Ayton
 	
 	Permission is hereby granted, free of charge, to any person obtaining a
 	copy of this software and associated documentation files (the “Software”),

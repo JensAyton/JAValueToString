@@ -1,9 +1,10 @@
 #import "JAValueToString.h"
 #import <complex.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 
-typedef int(*MyFunc)(NSRect r);
-typedef int(^MyBlock)(NSRect r);
+typedef int(*MyFunc)(CGRect r);
+typedef int(^MyBlock)(CGRect r);
 
 
 #if defined(__has_feature) && __has_feature(objc_arc)
@@ -20,7 +21,7 @@ typedef int(^MyBlock)(NSRect r);
 typedef union MyUnion
 {
 	double b[6];
-	NSRect a;
+	CGRect a;
 } MyUnion;
 
 
@@ -37,8 +38,8 @@ typedef struct MyStruct
 	const char * const str;
 	int * a;
 	void *v;
-	NSRect *r;
-	NSRect r2;
+	CGRect *r;
+	CGRect r2;
 	short saf;
 	struct { int a; } anon;
 	struct { float a; } *anonp;
@@ -65,7 +66,7 @@ int main (int argc, const char * argv[])
 {
 	AUTORELEASE_ENTER
 	
-	NSRect r = NSMakeRect(1, 2, 3, 4);
+	CGRect r = { 1, 2, 3, 4 };
 	int a = 42;
 	MyUnion u = { .a = r };
 	
