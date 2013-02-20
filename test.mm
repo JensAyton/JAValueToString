@@ -9,7 +9,7 @@ class TestClass
 	
 public:
 	/*	Note: having a virtual method means there's a vtable, which is encoded
-		as "^^?" and displayed as "&&<unknown>".
+		as "^^?" and displayed as "<vtable 0x...>".
 	*/
 	virtual ~TestClass() {};
 };
