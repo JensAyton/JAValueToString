@@ -126,12 +126,17 @@ int main (int argc, const char * argv[])
 	} nestedAlignmentTest = { 1, { 2, 3 } };
 	JA_DUMP(nestedAlignmentTest);
 	
+#if 0
 	// Known failure case: bitfields are not supported.
 	struct BitfieldTest
 	{
 		int bitfield: 4;
 	} bitfieldTestFAIL;
 	JA_DUMP(bitfieldTestFAIL);
+#endif
+	
+	int array[5] = { 1, 2, 3, 4, 5 };
+	JA_DUMP(array);
 	
 	NSLog(@"Done.");
 	
