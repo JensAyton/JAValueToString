@@ -53,8 +53,10 @@
 	
 	val: any lvalue.
 */
-#define JA_ENCODE(val)  JAValueToString(@encode(typeof(val)), (typeof(val) *){ &(val) }, sizeof val)
-
+#define JA_ENCODE(val) ({\
+    __typeof__(val) _val = val;\
+    JAValueToString(@encode(typeof(_val)), (typeof(_val) *){ &(_val) }, sizeof _val);\
+})
 
 /*	JA_DUMP(val)
 	
