@@ -17,13 +17,12 @@ public:
 
 int main (int argc, const char * argv[])
 {
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	
-	TestClass testCase;
-	JA_DUMP(testCase);
-	
-	NSLog(@"Done.");
-	
-	[pool drain];
+	@autoreleasepool
+	{
+		TestClass testCase;
+		JA_DUMP(testCase);
+		
+		NSLog(@"Done.");
+	}
 	return 0;
 }
